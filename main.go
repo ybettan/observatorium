@@ -154,6 +154,7 @@ func exec(logger log.Logger, reg *prometheus.Registry, cfg config) error {
 				return fmt.Errorf("initialize certificate reloader: %w", err)
 			}
 
+			//FIXME: use this function to extract the client-cert
 			tlsConfig.GetCertificate = r.GetCertificate
 
 			ctx, cancel := context.WithCancel(context.Background())

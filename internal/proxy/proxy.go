@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	stdlog "log"
 	"net"
@@ -68,6 +69,22 @@ func New(logger log.Logger, prefix string, endpoint *url.URL, opts ...Option) *P
 		if r.Body != nil {
 			bodyBytes, _ := ioutil.ReadAll(r.Body)
 			r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			//FIXME: cert verification should be handled here?
+
+			// inspect header
+			level.Info(logger).Log("method", r.Method, "header", header2String(r.Header))
+
+			//// decode body
+			//bodyBytes, _ = snappy.Decode(nil, bodyBytes)
+			//if err != nil {
+			//	level.Error(logger).Log("msg", "error decoding body")
+			//	http.Error(w, "can't decode body", http.StatusBadRequest)
+			//	return
+			//}
+
+			//// inspect header & body
+			//level.Info(logger).Log("method", r.Method, "header", header2String(r.Header), "body", string(body[:len(body)]))
 		}
 
 		level.Debug(logger).Log("endpoint scheme", endpoint.Scheme, "endpoint host", endpoint.Host, "prefix", prefix, "path", r.URL.Path)
@@ -100,6 +117,18 @@ func New(logger log.Logger, prefix string, endpoint *url.URL, opts ...Option) *P
 	}
 
 	return &Proxy{logger: logger, reverseProxy: &rev}
+}
+
+func header2String(m http.Header) string {
+	var res string
+	for k, v := range map[string][]string(m) {
+		res = res + fmt.Sprintf("%s --> [", k)
+		for _, s := range v {
+			res = res + s + ", "
+		}
+		res = res + "]\n"
+	}
+	return res
 }
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
